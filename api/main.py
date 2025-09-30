@@ -10,10 +10,10 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -33,7 +33,9 @@ def read_items(page: int = 1, limit: int = 10):
     result = cursor.fetchone()
     total_count = result[0] if result else 0
 
-    cursor.execute("SELECT * FROM items LIMIT %s OFFSET %s", (limit, offset))
+    cursor.execute(
+        "SELECT * FROM items ORDER BY id LIMIT %s OFFSET %s", (limit, offset)
+    )
     items = cursor.fetchall()
 
     db.close_db_cursor(cursor)
@@ -42,7 +44,7 @@ def read_items(page: int = 1, limit: int = 10):
     total_pages = (total_count + limit - 1) // limit
 
     return {
-        "items": items,
+        "items": [item for item in items],
         "pagination": {
             "current_page": page,
             "total_pages": total_pages,
@@ -72,14 +74,16 @@ def read_item(
 def create_item(
     name: str,
     price: float,
-    description: Union[str, None] = None,
+    description: str = "",
+    amount: int = 0,
+    category: str = "",
 ):
     conn = db.get_db_connection()
     cursor = db.get_db_cursor(conn)
 
     cursor.execute(
-        "INSERT INTO items (name, price, description) VALUES (%s, %s, %s) RETURNING id",
-        (name, price, description),
+        "INSERT INTO items (name, price, description, amount, category, purchased) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        (name, price, description, amount, category, False),
     )
     result = cursor.fetchone()
     item_id = result[0] if result else None
@@ -93,6 +97,9 @@ def create_item(
         "name": name,
         "price": price,
         "description": description,
+        "amount": amount,
+        "category": category,
+        "purchased": False,
     }
 
 
@@ -116,6 +123,9 @@ def update_item(
     name: Union[str, None] = None,
     price: Union[float, None] = None,
     description: Union[str, None] = None,
+    amount: Union[int, None] = None,
+    category: Union[str, None] = None,
+    purchased: Union[bool, None] = None,
 ):
     conn = db.get_db_connection()
     cursor = db.get_db_cursor(conn)
@@ -134,6 +144,18 @@ def update_item(
     if description is not None:
         update_fields.append("description = %s")
         values.append(description)
+
+    if amount is not None:
+        update_fields.append("amount = %s")
+        values.append(amount)
+
+    if category is not None:
+        update_fields.append("category = %s")
+        values.append(category)
+
+    if purchased is not None:
+        update_fields.append("purchased = %s")
+        values.append(purchased)
 
     if not update_fields:
         db.close_db_cursor(cursor)
@@ -154,7 +176,14 @@ def update_item(
         "item_id": item_id,
         "updated_fields": {
             k: v
-            for k, v in [("name", name), ("price", price), ("description", description)]
+            for k, v in [
+                ("name", name),
+                ("price", price),
+                ("description", description),
+                ("amount", amount),
+                ("category", category),
+                ("purchased", purchased),
+            ]
             if v is not None
         },
     }
