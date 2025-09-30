@@ -1,6 +1,18 @@
-const get_all_items = async () => {
-  const response = await fetch("http://127.0.0.1:8000/items/?limit=10&page=1");
+let currentPage = 1;
+let totalPages = 1;
+let totalItems = 0;
+let itemsPerPage = 10;
+
+const get_all_items = async (page = 1, limit = itemsPerPage) => {
+  const response = await fetch(`http://127.0.0.1:8000/items/?limit=${limit}&page=${page}`);
   const data = await response.json();
+
+  currentPage = data.pagination.current_page;
+  totalPages = data.pagination.total_pages;
+  totalItems = data.pagination.total_items;
+  itemsPerPage = limit;
+
+  updatePaginationUI();
 
   return data.items;
 };
@@ -23,25 +35,29 @@ const add_item = async (item) => {
   return data;
 };
 
-const delete_item = async (itemId) => {
-  const response = await fetch(`http://127.0.0.1:8000/items/${itemId}/`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      purchased: true
-    }),
-  });
+const delete_item = async (itemId, skipRefresh = false) => {
+  if (itemId) {
+    const response = await fetch(`http://127.0.0.1:8000/items/${itemId}/`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        purchased: true,
+      }),
+    });
 
-  if (!response.ok) {
-    console.error("Failed to update item");
-    return null;
+    if (!response.ok) {
+      console.error("Failed to update item");
+      return null;
+    }
+
+    if (!skipRefresh) {
+      await populate_items(currentPage);
+    }
+
+    return;
   }
-
-  location.reload();
-
-  return;
 };
 
 document.addEventListener("click", (event) => {
@@ -59,7 +75,7 @@ document.addEventListener("click", (event) => {
 
     open_update_item_dialog(item);
   }
-  
+
   return;
 });
 
@@ -86,7 +102,7 @@ const open_update_item_dialog = (item) => {
 
     update_item(item[0], updatedItem);
   };
-  
+
   return;
 };
 
@@ -104,12 +120,12 @@ const update_item = async (itemId, updatedData) => {
     return null;
   }
 
-  location.reload();
+  await populate_items(currentPage);
   return;
 };
 
-const populate_items = async () => {
-  const items = await get_all_items();
+const populate_items = async (page = 1) => {
+  const items = await get_all_items(page, itemsPerPage);
   const itemList = document.getElementById("table-body");
 
   if (!itemList) {
@@ -117,13 +133,23 @@ const populate_items = async () => {
     return;
   }
 
+  itemList.innerHTML = "";
+
   if (!items || items.length === 0) {
+    const messageField = document.getElementById("message");
+    messageField.innerHTML = "";
     const noItemsFound = document.createElement("td");
     noItemsFound.innerHTML = "No items found.";
-    itemList.appendChild(noItemsFound);
-    
+    noItemsFound.colSpan = 8;
+
+    const row = document.createElement("tr");
+    row.appendChild(noItemsFound);
+    itemList.appendChild(row);
     return;
   }
+
+  const messageField = document.getElementById("message");
+  messageField.innerHTML = "";
 
   items.forEach((item) => {
     const row = document.createElement("tr");
@@ -140,7 +166,7 @@ const populate_items = async () => {
           <td>${item[3]}</td>
           <td>${item[4]}</td>
           <td>${item[5]}</td>
-          <td>${full_price}</td>
+          <td>${full_price.toFixed(2)}</td>
           <td>
             <button
               class="update-item-button"
@@ -162,7 +188,44 @@ const populate_items = async () => {
 
 addEventListener("DOMContentLoaded", () => {
   populate_items();
+  setupPaginationEvents();
 });
+
+const updatePaginationUI = () => {
+  document.getElementById("current-page").textContent = currentPage;
+  document.getElementById("total-pages").textContent = totalPages;
+  document.getElementById("total-items").textContent = `Total: ${totalItems}`;
+  
+  const prevButton = document.getElementById("prev-page-button");
+  const nextButton = document.getElementById("next-page-button");
+  
+  prevButton.disabled = currentPage <= 1;
+  nextButton.disabled = currentPage >= totalPages;
+};
+
+const setupPaginationEvents = () => {
+  const prevButton = document.getElementById("prev-page-button");
+  const nextButton = document.getElementById("next-page-button");
+  const itemsPerPageSelect = document.getElementById("items-per-page");
+  
+  prevButton.addEventListener("click", async () => {
+    if (currentPage > 1) {
+      await populate_items(currentPage - 1);
+    }
+  });
+  
+  nextButton.addEventListener("click", async () => {
+    if (currentPage < totalPages) {
+      await populate_items(currentPage + 1);
+    }
+  });
+
+  itemsPerPageSelect.addEventListener("change", async () => {
+    itemsPerPage = parseInt(itemsPerPageSelect.value);
+    currentPage = 1;
+    await populate_items(1);
+  });
+};
 
 const open_add_item_modal = document.querySelector("#open-add-item-modal");
 const close_add_item_modal = document.querySelector("#close-add-item-modal");
@@ -200,11 +263,9 @@ add_item_button.addEventListener("click", async (event) => {
     updated_at: new Date().toISOString(),
   };
 
-  console.log(newItem);
-
   await add_item(newItem);
   dialog.close();
-  location.reload();
+  await populate_items(currentPage);
 });
 
 const purchase_item_button = document.getElementById("purchase-item-button");
@@ -216,5 +277,16 @@ purchase_item_button.addEventListener("click", async () => {
     checkbox.id.replace("item-", "")
   );
 
-  delete_item(itemIds);
+  const itemsOnPage = document.querySelectorAll("#table-body tr").length;
+  const shouldGoToPrevPage = itemsOnPage === selectedItems.length && currentPage > 1;
+
+  for (const itemId of itemIds) {
+    await delete_item(itemId, true);
+  }
+  
+  if (shouldGoToPrevPage) {
+    await populate_items(currentPage - 1);
+  } else {
+    await populate_items(currentPage);
+  }
 });

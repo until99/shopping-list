@@ -93,14 +93,26 @@ def create_item(item: Item):
     cursor = db.get_db_cursor(conn)
 
     fields = [field for field in Item.model_fields.keys() if field != "id"]
-    values = [getattr(item, field) for field in fields]
+    fields.extend(["created_at", "updated_at"])
+    
+    values = [getattr(item, field) for field in Item.model_fields.keys() if field != "id"]
+    values.extend(["NOW()", "NOW()"])
 
-    placeholders = ", ".join(["%s"] * len(fields))
+    placeholders = []
+    for i, field in enumerate(fields):
+        if field in ["created_at", "updated_at"]:
+            placeholders.append("NOW()")
+        else:
+            placeholders.append("%s")
+    
     field_names = ", ".join(fields)
+    placeholders_str = ", ".join(placeholders)
+    
+    execution_values = [getattr(item, field) for field in Item.model_fields.keys() if field != "id"]
 
     cursor.execute(
-        f"INSERT INTO vitalis.items ({field_names}) VALUES ({placeholders}) RETURNING id",
-        values,
+        f"INSERT INTO vitalis.items ({field_names}) VALUES ({placeholders_str}) RETURNING id",
+        execution_values,
     )
     result = cursor.fetchone()
     item_id = result[0] if result else None
@@ -140,8 +152,18 @@ def update_item(item_id: int, item_update: ItemUpdate):
         db.close_db_connection(conn)
         return {"status": "error", "message": "No fields to update"}
 
-    update_fields = [f"{field} = %s" for field in update_data.keys()]
-    values = list(update_data.values())
+    update_data["updated_at"] = "NOW()"
+
+    update_fields = []
+    values = []
+    
+    for field, value in update_data.items():
+        if field == "updated_at":
+            update_fields.append(f"{field} = NOW()")
+        else:
+            update_fields.append(f"{field} = %s")
+            values.append(value)
+    
     values.append(item_id)
 
     query = f"UPDATE vitalis.items SET {', '.join(update_fields)} WHERE id = %s"
@@ -155,5 +177,5 @@ def update_item(item_id: int, item_update: ItemUpdate):
     return {
         "status": "success",
         "item_id": item_id,
-        "updated_fields": update_data,
+        "updated_fields": {k: v for k, v in update_data.items() if k != "updated_at"},
     }
