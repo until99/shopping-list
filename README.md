@@ -12,6 +12,8 @@ A full-stack shopping list application built with FastAPI backend and vanilla Ja
 - ✅ Mark items as purchased/unpurchased
 - ✅ Categorize items (Fruits, Vegetables, Dairy, Meat)
 - ✅ Real-time updates with a responsive web interface
+- ✅ Dedicated purchased items page for better organization
+- ✅ Navigation between main shopping list and purchased items
 
 ## Tech Stack
 
@@ -26,6 +28,7 @@ A full-stack shopping list application built with FastAPI backend and vanilla Ja
 - **CSS3** - Modern styling and responsive design
 - **Vanilla JavaScript** - Interactive functionality
 - **Dialog API** - Modal dialogs for adding/updating items
+- **Multi-page architecture** - Separate pages for main list and purchased items
 
 ## Project Structure
 
@@ -34,13 +37,18 @@ shopping-list/
 ├── api/                    # Backend API
 │   ├── main.py            # FastAPI application
 │   ├── pyproject.toml     # Python dependencies
+│   ├── uv.lock           # UV lock file
 │   └── database/          # Database modules
 │       ├── __init__.py
 │       └── postgresql.py  # PostgreSQL connection utilities
 ├── app/                   # Frontend application
-│   ├── index.html         # Main HTML page
-│   ├── app.js            # JavaScript functionality
-│   └── styles.css        # CSS styles
+│   ├── index.html         # Main shopping list page
+│   ├── styles.css        # CSS styles
+│   ├── pages/            # Additional pages
+│   │   └── purchased_items.html  # Purchased items page
+│   └── scripts/          # JavaScript files
+│       ├── app.js        # Main page functionality
+│       └── purchased_items.js    # Purchased items functionality
 └── README.md             # This file
 ```
 
@@ -48,6 +56,7 @@ shopping-list/
 
 - Python 3.13+
 - PostgreSQL database
+- UV package manager (recommended) or pip
 - Web browser (for frontend)
 
 ## Setup Instructions
@@ -79,9 +88,14 @@ CREATE TABLE vitalis.items (
 cd api
 ```
 
-2. Install dependencies using uv:
+2. Install dependencies using uv (recommended):
 ```bash
 uv sync
+```
+
+Or using pip:
+```bash
+pip install -r requirements.txt
 ```
 
 3. Configure your database connection in `database/postgresql.py`
@@ -106,6 +120,25 @@ python -m http.server 3000
 ```
 
 Or open `index.html` directly in your web browser.
+
+The application includes:
+- **Main page** (`index.html`) - View and manage all shopping items
+- **Purchased items page** (`pages/purchased_items.html`) - View items that have been purchased
+- Navigation between pages is available through the interface
+
+## Usage
+
+1. **Main Shopping List Page**: 
+   - Add new items using the "Add Item" button
+   - Edit existing items by clicking the edit button
+   - Mark items as purchased/unpurchased
+   - Delete items you no longer need
+   - Navigate to purchased items page to view completed purchases
+
+2. **Purchased Items Page**:
+   - View all items that have been marked as purchased
+   - Return items to the main list by unmarking them as purchased
+   - Navigate back to the main shopping list
 
 ## API Endpoints
 
