@@ -48,12 +48,12 @@ def read_items(page: int = 1, limit: int = 10):
 
     offset = (page - 1) * limit
 
-    cursor.execute("SELECT COUNT(*) FROM vitalis.items")
+    cursor.execute("SELECT COUNT(*) FROM vitalis.items where purchased = false")
     result = cursor.fetchone()
     total_count = result[0] if result else 0
 
     cursor.execute(
-        "SELECT * FROM vitalis.items ORDER BY id LIMIT %s OFFSET %s", (limit, offset)
+        "SELECT * FROM vitalis.items WHERE purchased = false ORDER BY id LIMIT %s OFFSET %s", (limit, offset)
     )
     items = cursor.fetchall()
 
