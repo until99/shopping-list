@@ -26,24 +26,16 @@ const populate_items = async () => {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
 
-    if (item[6] == true) {
-      checkbox.checked = true;
-      checkbox.disabled = true;
-    }
-
-    row.innerHTML = `
+    if (item[6] !== true) {
+      row.innerHTML = `
             <td>${checkbox.outerHTML}</td>
             <td>${item[0]}</td>
             <td>${item[1]}</td>
             <td>${item[2]}</td>
             <td>${item[3]}</td>
             <td>${item[4]}</td>
-            <td>${item[6] == true ? "Yes" : "No"}</td>
         `;
-    itemList.appendChild(row);
+      itemList.appendChild(row);
+    }
   });
 };
-
-document.addEventListener("DOMContentLoaded", () => {
-  populate_items();
-});

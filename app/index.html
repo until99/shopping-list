@@ -10,6 +10,11 @@
   </head>
   <body>
     <h1>My Shopping List</h1>
+
+    <button id="add-item-button">Add Item</button>
+
+    <br /><br />
+
     <table>
       <thead>
         <tr>
@@ -19,10 +24,16 @@
           <th>Description</th>
           <th>Amount</th>
           <th>Category</th>
-          <th>Purchased</th>
         </tr>
       </thead>
       <tbody id="table-body"></tbody>
     </table>
+
+    <br />
+    <button id="purchase-item-button">Purchase Selected Items</button>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", populate_items);
+    </script>
   </body>
 </html>
