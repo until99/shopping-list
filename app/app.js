@@ -25,15 +25,23 @@ const add_item = async (item) => {
 
 const delete_item = async (itemId) => {
   const response = await fetch(`http://127.0.0.1:8000/items/${itemId}/`, {
-    method: "DELETE",
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      purchased: true
+    }),
   });
 
   if (!response.ok) {
-    console.error("Failed to delete item");
+    console.error("Failed to update item");
     return null;
   }
 
-  return true;
+  location.reload();
+
+  return;
 };
 
 document.addEventListener("click", (event) => {
@@ -51,6 +59,8 @@ document.addEventListener("click", (event) => {
 
     open_update_item_dialog(item);
   }
+  
+  return;
 });
 
 const open_update_item_dialog = (item) => {
@@ -74,10 +84,10 @@ const open_update_item_dialog = (item) => {
       updated_at: new Date().toISOString(),
     };
 
-    await update_item(item[0], updatedItem);
-    dialog.close();
-    location.reload();
+    update_item(item[0], updatedItem);
   };
+  
+  return;
 };
 
 const update_item = async (itemId, updatedData) => {
@@ -94,8 +104,8 @@ const update_item = async (itemId, updatedData) => {
     return null;
   }
 
-  const data = await response.json();
-  return data;
+  location.reload();
+  return;
 };
 
 const populate_items = async () => {
@@ -108,7 +118,10 @@ const populate_items = async () => {
   }
 
   if (!items || items.length === 0) {
-    console.error("No items found.");
+    const noItemsFound = document.createElement("td");
+    noItemsFound.innerHTML = "No items found.";
+    itemList.appendChild(noItemsFound);
+    
     return;
   }
 
@@ -202,5 +215,6 @@ purchase_item_button.addEventListener("click", async () => {
   const itemIds = selectedItems.map((checkbox) =>
     checkbox.id.replace("item-", "")
   );
-  console.log("Selected item IDs:", itemIds);
+
+  delete_item(itemIds);
 });
