@@ -1,10 +1,20 @@
 from typing import Union
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 import database.postgresql as db
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 
 @app.get("/")
@@ -13,17 +23,33 @@ def read_root():
 
 
 @app.get("/items/")
-def read_items():
+def read_items(page: int = 1, limit: int = 10):
     conn = db.get_db_connection()
     cursor = db.get_db_cursor(conn)
 
-    cursor.execute("SELECT * FROM items")
+    offset = (page - 1) * limit
+
+    cursor.execute("SELECT COUNT(*) FROM items")
+    result = cursor.fetchone()
+    total_count = result[0] if result else 0
+
+    cursor.execute("SELECT * FROM items LIMIT %s OFFSET %s", (limit, offset))
     items = cursor.fetchall()
 
     db.close_db_cursor(cursor)
     db.close_db_connection(conn)
 
-    return {"items": items}
+    total_pages = (total_count + limit - 1) // limit
+
+    return {
+        "items": items,
+        "pagination": {
+            "current_page": page,
+            "total_pages": total_pages,
+            "total_items": total_count,
+            "items_per_page": limit,
+        },
+    }
 
 
 @app.get("/items/{item_id}")
