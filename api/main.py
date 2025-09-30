@@ -45,7 +45,7 @@ def read_item(
 @app.post("/items/")
 def create_item(
     name: str,
-    price: float = 0.0,
+    price: float,
     description: Union[str, None] = None,
 ):
     conn = db.get_db_connection()
@@ -85,14 +85,39 @@ def delete_item(item_id: int):
 
 
 @app.put("/items/{item_id}")
-def update_item(item_id: int, name: str, description: Union[str, None] = None):
+def update_item(
+    item_id: int,
+    name: Union[str, None] = None,
+    price: Union[float, None] = None,
+    description: Union[str, None] = None,
+):
     conn = db.get_db_connection()
     cursor = db.get_db_cursor(conn)
 
-    cursor.execute(
-        "UPDATE items SET name = %s, description = %s WHERE id = %s",
-        (name, description, item_id),
-    )
+    update_fields = []
+    values = []
+
+    if name is not None:
+        update_fields.append("name = %s")
+        values.append(name)
+
+    if price is not None:
+        update_fields.append("price = %s")
+        values.append(price)
+
+    if description is not None:
+        update_fields.append("description = %s")
+        values.append(description)
+
+    if not update_fields:
+        db.close_db_cursor(cursor)
+        db.close_db_connection(conn)
+        return {"status": "error", "message": "No fields to update"}
+
+    query = f"UPDATE items SET {', '.join(update_fields)} WHERE id = %s"
+    values.append(item_id)
+
+    cursor.execute(query, values)
     conn.commit()
 
     db.close_db_cursor(cursor)
@@ -101,6 +126,9 @@ def update_item(item_id: int, name: str, description: Union[str, None] = None):
     return {
         "status": "success",
         "item_id": item_id,
-        "name": name,
-        "description": description,
+        "updated_fields": {
+            k: v
+            for k, v in [("name", name), ("price", price), ("description", description)]
+            if v is not None
+        },
     }
