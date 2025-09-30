@@ -1,4 +1,5 @@
-from typing import Union
+from typing import Optional
+from pydantic import BaseModel
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +8,6 @@ import database.postgresql as db
 
 app = FastAPI()
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -15,6 +15,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class Item(BaseModel):
+    id: Optional[int] = None
+    name: str
+    price: float
+    description: str = ""
+    amount: int = 0
+    category: str = ""
+    purchased: bool = False
+
+
+class ItemUpdate(BaseModel):
+    name: Optional[str] = None
+    price: Optional[float] = None
+    description: Optional[str] = None
+    amount: Optional[int] = None
+    category: Optional[str] = None
+    purchased: Optional[bool] = None
 
 
 @app.get("/")
@@ -29,12 +48,12 @@ def read_items(page: int = 1, limit: int = 10):
 
     offset = (page - 1) * limit
 
-    cursor.execute("SELECT COUNT(*) FROM items")
+    cursor.execute("SELECT COUNT(*) FROM vitalis.items")
     result = cursor.fetchone()
     total_count = result[0] if result else 0
 
     cursor.execute(
-        "SELECT * FROM items ORDER BY id LIMIT %s OFFSET %s", (limit, offset)
+        "SELECT * FROM vitalis.items ORDER BY id LIMIT %s OFFSET %s", (limit, offset)
     )
     items = cursor.fetchall()
 
@@ -55,13 +74,11 @@ def read_items(page: int = 1, limit: int = 10):
 
 
 @app.get("/items/{item_id}")
-def read_item(
-    item_id: int,
-):
+def read_item(item_id: int):
     conn = db.get_db_connection()
     cursor = db.get_db_cursor(conn)
 
-    cursor.execute("SELECT * FROM items WHERE id = %s", (item_id,))
+    cursor.execute("SELECT * FROM vitalis.items WHERE id = %s", (item_id,))
     item = cursor.fetchone()
 
     db.close_db_cursor(cursor)
@@ -71,19 +88,19 @@ def read_item(
 
 
 @app.post("/items/")
-def create_item(
-    name: str,
-    price: float,
-    description: str = "",
-    amount: int = 0,
-    category: str = "",
-):
+def create_item(item: Item):
     conn = db.get_db_connection()
     cursor = db.get_db_cursor(conn)
 
+    fields = [field for field in Item.model_fields.keys() if field != "id"]
+    values = [getattr(item, field) for field in fields]
+
+    placeholders = ", ".join(["%s"] * len(fields))
+    field_names = ", ".join(fields)
+
     cursor.execute(
-        "INSERT INTO items (name, price, description, amount, category, purchased) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-        (name, price, description, amount, category, False),
+        f"INSERT INTO vitalis.items ({field_names}) VALUES ({placeholders}) RETURNING id",
+        values,
     )
     result = cursor.fetchone()
     item_id = result[0] if result else None
@@ -92,15 +109,9 @@ def create_item(
     db.close_db_cursor(cursor)
     db.close_db_connection(conn)
 
-    return {
-        "item_id": item_id,
-        "name": name,
-        "price": price,
-        "description": description,
-        "amount": amount,
-        "category": category,
-        "purchased": False,
-    }
+    response_data = item.model_dump()
+    response_data["id"] = item_id
+    return response_data
 
 
 @app.delete("/items/{item_id}")
@@ -108,7 +119,7 @@ def delete_item(item_id: int):
     conn = db.get_db_connection()
     cursor = db.get_db_cursor(conn)
 
-    cursor.execute("DELETE FROM items WHERE id = %s", (item_id,))
+    cursor.execute("DELETE FROM vitalis.items WHERE id = %s", (item_id,))
     conn.commit()
 
     db.close_db_cursor(cursor)
@@ -118,52 +129,22 @@ def delete_item(item_id: int):
 
 
 @app.put("/items/{item_id}")
-def update_item(
-    item_id: int,
-    name: Union[str, None] = None,
-    price: Union[float, None] = None,
-    description: Union[str, None] = None,
-    amount: Union[int, None] = None,
-    category: Union[str, None] = None,
-    purchased: Union[bool, None] = None,
-):
+def update_item(item_id: int, item_update: ItemUpdate):
     conn = db.get_db_connection()
     cursor = db.get_db_cursor(conn)
 
-    update_fields = []
-    values = []
+    update_data = item_update.model_dump(exclude_unset=True)
 
-    if name is not None:
-        update_fields.append("name = %s")
-        values.append(name)
-
-    if price is not None:
-        update_fields.append("price = %s")
-        values.append(price)
-
-    if description is not None:
-        update_fields.append("description = %s")
-        values.append(description)
-
-    if amount is not None:
-        update_fields.append("amount = %s")
-        values.append(amount)
-
-    if category is not None:
-        update_fields.append("category = %s")
-        values.append(category)
-
-    if purchased is not None:
-        update_fields.append("purchased = %s")
-        values.append(purchased)
-
-    if not update_fields:
+    if not update_data:
         db.close_db_cursor(cursor)
         db.close_db_connection(conn)
         return {"status": "error", "message": "No fields to update"}
 
-    query = f"UPDATE items SET {', '.join(update_fields)} WHERE id = %s"
+    update_fields = [f"{field} = %s" for field in update_data.keys()]
+    values = list(update_data.values())
     values.append(item_id)
+
+    query = f"UPDATE vitalis.items SET {', '.join(update_fields)} WHERE id = %s"
 
     cursor.execute(query, values)
     conn.commit()
@@ -174,16 +155,5 @@ def update_item(
     return {
         "status": "success",
         "item_id": item_id,
-        "updated_fields": {
-            k: v
-            for k, v in [
-                ("name", name),
-                ("price", price),
-                ("description", description),
-                ("amount", amount),
-                ("category", category),
-                ("purchased", purchased),
-            ]
-            if v is not None
-        },
+        "updated_fields": update_data,
     }

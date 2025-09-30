@@ -25,6 +25,7 @@ const populate_items = async () => {
     const row = document.createElement("tr");
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
+    checkbox.id = `item-${item[3]}`;
 
     if (item[6] !== true) {
       row.innerHTML = `
@@ -32,7 +33,7 @@ const populate_items = async () => {
             <td>${item[0]}</td>
             <td>${item[1]}</td>
             <td>${item[2]}</td>
-            <td>${item[3]}</td>
+            <td>${item[5]}</td>
             <td>${item[4]}</td>
         `;
       itemList.appendChild(row);
