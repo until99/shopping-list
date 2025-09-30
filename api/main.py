@@ -42,35 +42,42 @@ def read_root():
 
 
 @app.get("/items/")
-def read_items(page: int = 1, limit: int = 10):
-    conn = db.get_db_connection()
-    cursor = db.get_db_cursor(conn)
+def read_items(page: int = 1, limit: int = 10, purchased: Optional[bool] = None):
+        conn = db.get_db_connection()
+        cursor = db.get_db_cursor(conn)
 
-    offset = (page - 1) * limit
+        offset = (page - 1) * limit
 
-    cursor.execute("SELECT COUNT(*) FROM vitalis.items where purchased = false")
-    result = cursor.fetchone()
-    total_count = result[0] if result else 0
+        where_clause = ""
+        query_params = []
+        
+        if purchased is not None:
+            where_clause = "WHERE purchased = %s"
+            query_params.append(purchased)
 
-    cursor.execute(
-        "SELECT * FROM vitalis.items WHERE purchased = false ORDER BY id LIMIT %s OFFSET %s", (limit, offset)
-    )
-    items = cursor.fetchall()
+        count_query = f"SELECT COUNT(*) FROM vitalis.items {where_clause}"
+        cursor.execute(count_query, query_params)
+        result = cursor.fetchone()
+        total_count = result[0] if result else 0
 
-    db.close_db_cursor(cursor)
-    db.close_db_connection(conn)
+        items_query = f"SELECT * FROM vitalis.items {where_clause} ORDER BY id LIMIT %s OFFSET %s"
+        cursor.execute(items_query, query_params + [limit, offset])
+        items = cursor.fetchall()
 
-    total_pages = (total_count + limit - 1) // limit
+        db.close_db_cursor(cursor)
+        db.close_db_connection(conn)
 
-    return {
-        "items": [item for item in items],
-        "pagination": {
-            "current_page": page,
-            "total_pages": total_pages,
-            "total_items": total_count,
-            "items_per_page": limit,
-        },
-    }
+        total_pages = (total_count + limit - 1) // limit
+
+        return {
+            "items": [item for item in items],
+            "pagination": {
+                "current_page": page,
+                "total_pages": total_pages,
+                "total_items": total_count,
+                "items_per_page": limit,
+            },
+        }
 
 
 @app.get("/items/{item_id}")

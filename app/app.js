@@ -4,7 +4,9 @@ let totalItems = 0;
 let itemsPerPage = 10;
 
 const get_all_items = async (page = 1, limit = itemsPerPage) => {
-  const response = await fetch(`http://127.0.0.1:8000/items/?limit=${limit}&page=${page}`);
+  const response = await fetch(
+    `http://127.0.0.1:8000/items/?limit=${limit}&page=${page}&purchased=false`
+  );
   const data = await response.json();
 
   currentPage = data.pagination.current_page;
@@ -195,10 +197,10 @@ const updatePaginationUI = () => {
   document.getElementById("current-page").textContent = currentPage;
   document.getElementById("total-pages").textContent = totalPages;
   document.getElementById("total-items").textContent = `Total: ${totalItems}`;
-  
+
   const prevButton = document.getElementById("prev-page-button");
   const nextButton = document.getElementById("next-page-button");
-  
+
   prevButton.disabled = currentPage <= 1;
   nextButton.disabled = currentPage >= totalPages;
 };
@@ -207,13 +209,13 @@ const setupPaginationEvents = () => {
   const prevButton = document.getElementById("prev-page-button");
   const nextButton = document.getElementById("next-page-button");
   const itemsPerPageSelect = document.getElementById("items-per-page");
-  
+
   prevButton.addEventListener("click", async () => {
     if (currentPage > 1) {
       await populate_items(currentPage - 1);
     }
   });
-  
+
   nextButton.addEventListener("click", async () => {
     if (currentPage < totalPages) {
       await populate_items(currentPage + 1);
@@ -273,20 +275,24 @@ purchase_item_button.addEventListener("click", async () => {
   const selectedItems = Array.from(
     document.querySelectorAll("input[type='checkbox']:checked")
   );
+
   const itemIds = selectedItems.map((checkbox) =>
     checkbox.id.replace("item-", "")
   );
 
   const itemsOnPage = document.querySelectorAll("#table-body tr").length;
-  const shouldGoToPrevPage = itemsOnPage === selectedItems.length && currentPage > 1;
+  const shouldGoToPrevPage =
+    itemsOnPage === selectedItems.length && currentPage > 1;
 
-  for (const itemId of itemIds) {
-    await delete_item(itemId, true);
-  }
-  
-  if (shouldGoToPrevPage) {
-    await populate_items(currentPage - 1);
-  } else {
-    await populate_items(currentPage);
+  if (selectedItems.length > 0) {
+    for (const itemId of itemIds) {
+      await delete_item(itemId, true);
+    }
+
+    if (shouldGoToPrevPage) {
+      await populate_items(currentPage - 1);
+    } else {
+      await populate_items(currentPage);
+    }
   }
 });
