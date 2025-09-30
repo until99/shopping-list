@@ -6,6 +6,7 @@ A full-stack shopping list application built with FastAPI backend and vanilla Ja
 
 - ✅ Add new shopping items with details (name, price, description, amount, category)
 - ✅ View all shopping items with pagination
+- ✅ Filter items by purchased status (show only purchased or unpurchased items)
 - ✅ Update existing items
 - ✅ Delete items from the list
 - ✅ Mark items as purchased/unpurchased
@@ -109,7 +110,11 @@ Or open `index.html` directly in your web browser.
 ## API Endpoints
 
 - `GET /` - Health check
-- `GET /items/` - Get all items (with pagination)
+- `GET /items/` - Get all items (with pagination and optional filtering)
+  - Query parameters:
+    - `page` (int, default: 1) - Page number for pagination
+    - `limit` (int, default: 10) - Number of items per page
+    - `purchased` (bool, optional) - Filter by purchased status (true/false)
 - `GET /items/{item_id}` - Get specific item
 - `POST /items/` - Create new item
 - `PUT /items/{item_id}` - Update existing item
@@ -133,6 +138,16 @@ curl -X POST "http://localhost:8000/items/" \
 **Get all items:**
 ```bash
 curl "http://localhost:8000/items/?page=1&limit=10"
+```
+
+**Get only unpurchased items:**
+```bash
+curl "http://localhost:8000/items/?purchased=false"
+```
+
+**Get only purchased items:**
+```bash
+curl "http://localhost:8000/items/?purchased=true&page=1&limit=5"
 ```
 
 ## Development
