@@ -3,9 +3,11 @@ let totalPages = 1;
 let totalItems = 0;
 let itemsPerPage = 10;
 
+const host = "http://127.0.0.1:8000";
+
 const get_all_items = async (page = 1, limit = itemsPerPage) => {
   const response = await fetch(
-    `http://127.0.0.1:8000/items/?limit=${limit}&page=${page}&purchased=false`
+    `${host}/items/?limit=${limit}&page=${page}&purchased=false`
   );
   const data = await response.json();
 
@@ -20,7 +22,7 @@ const get_all_items = async (page = 1, limit = itemsPerPage) => {
 };
 
 const add_item = async (item) => {
-  const response = await fetch("http://127.0.0.1:8000/items/", {
+  const response = await fetch(`${host}/items/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -39,7 +41,7 @@ const add_item = async (item) => {
 
 const delete_item = async (itemId, skipRefresh = false) => {
   if (itemId) {
-    const response = await fetch(`http://127.0.0.1:8000/items/${itemId}/`, {
+    const response = await fetch(`${host}/items/${itemId}/`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -109,7 +111,7 @@ const open_update_item_dialog = (item) => {
 };
 
 const update_item = async (itemId, updatedData) => {
-  const response = await fetch(`http://127.0.0.1:8000/items/${itemId}/`, {
+  const response = await fetch(`${host}/items/${itemId}/`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -147,13 +149,13 @@ const populate_items = async (page = 1) => {
     const row = document.createElement("tr");
     row.appendChild(noItemsFound);
     itemList.appendChild(row);
-    
+
     // Set total to 0 when no items
     const totalValueElement = document.getElementById("total-value");
     if (totalValueElement) {
       totalValueElement.innerHTML = `<strong>$0.00</strong>`;
     }
-    
+
     return;
   }
 
