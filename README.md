@@ -137,7 +137,6 @@ The application includes:
 
 2. **Purchased Items Page**:
    - View all items that have been marked as purchased
-   - Return items to the main list by unmarking them as purchased
    - Navigate back to the main shopping list
 
 ## API Endpoints

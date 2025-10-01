@@ -42,6 +42,13 @@ const populatePurchasedItems = async (page = 1) => {
     const row = document.createElement("tr");
     row.appendChild(noItemsFound);
     purchasedItemsList.appendChild(row);
+    
+    // Set total to 0 when no items
+    const totalValueElement = document.getElementById("purchased-total-value");
+    if (totalValueElement) {
+      totalValueElement.innerHTML = `<strong>$0.00</strong>`;
+    }
+    
     return;
   }
 
@@ -50,9 +57,12 @@ const populatePurchasedItems = async (page = 1) => {
     messageField.innerHTML = "";
   }
 
+  let totalValue = 0;
+
   items.forEach((item) => {
     const row = document.createElement("tr");
     const full_price = item[4] * item[5];
+    totalValue += full_price;
 
     row.innerHTML = `
       <td>${item[1]}</td>
@@ -64,6 +74,12 @@ const populatePurchasedItems = async (page = 1) => {
     `;
     purchasedItemsList.appendChild(row);
   });
+
+  // Update total value display
+  const totalValueElement = document.getElementById("purchased-total-value");
+  if (totalValueElement) {
+    totalValueElement.innerHTML = `<strong>$${totalValue.toFixed(2)}</strong>`;
+  }
 };
 
 const updatePaginationUI = () => {

@@ -147,11 +147,20 @@ const populate_items = async (page = 1) => {
     const row = document.createElement("tr");
     row.appendChild(noItemsFound);
     itemList.appendChild(row);
+    
+    // Set total to 0 when no items
+    const totalValueElement = document.getElementById("total-value");
+    if (totalValueElement) {
+      totalValueElement.innerHTML = `<strong>$0.00</strong>`;
+    }
+    
     return;
   }
 
   const messageField = document.getElementById("message");
   messageField.innerHTML = "";
+
+  let totalValue = 0;
 
   items.forEach((item) => {
     const row = document.createElement("tr");
@@ -160,6 +169,7 @@ const populate_items = async (page = 1) => {
     checkbox.id = `item-${item[0]}`;
 
     const full_price = item[4] * item[5];
+    totalValue += full_price;
 
     row.innerHTML = `
           <td>${checkbox.outerHTML}</td>
@@ -186,6 +196,12 @@ const populate_items = async (page = 1) => {
       `;
     itemList.appendChild(row);
   });
+
+  // Update total value display
+  const totalValueElement = document.getElementById("total-value");
+  if (totalValueElement) {
+    totalValueElement.innerHTML = `<strong>$${totalValue.toFixed(2)}</strong>`;
+  }
 };
 
 addEventListener("DOMContentLoaded", () => {
