@@ -44,7 +44,10 @@ def read_all_items(db: Session = Depends(get_db)):
 
 @router.put("/{id}/", response_model=ItemDB)
 def update_note(
-    *, db: Session = Depends(get_db), id: int = Path(..., gt=0), payload: ItemUpdateSchema
+    *,
+    db: Session = Depends(get_db),
+    id: int = Path(..., gt=0),
+    payload: ItemUpdateSchema,
 ):
     item = crud.get(db_session=db, id=id)
     if not item:

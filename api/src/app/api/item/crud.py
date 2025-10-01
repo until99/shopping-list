@@ -26,6 +26,10 @@ def get_all(db_session: Session):
     return db_session.query(Item).all()
 
 
+def get_all_where(db_session: Session, **kwargs):
+    return db_session.query(Item).filter_by(**kwargs).all()
+
+
 def put(db_session: Session, item: Item, payload: ItemUpdateSchema):
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
