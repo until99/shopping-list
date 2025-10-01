@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from api.item.models import Item, ItemSchema
+from api.item.models import Item, ItemSchema, ItemUpdateSchema
 
 
 def post(db_session: Session, payload: ItemSchema):
@@ -26,22 +26,10 @@ def get_all(db_session: Session):
     return db_session.query(Item).all()
 
 
-def put(
-    db_session: Session,
-    item: Item,
-    name: str,
-    description: str,
-    category: str,
-    price: float,
-    amount: int,
-    purchased: bool,
-):
-    item.name = name
-    item.description = description
-    item.category = category
-    item.price = price
-    item.amount = amount
-    item.purchased = purchased
+def put(db_session: Session, item: Item, payload: ItemUpdateSchema):
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(item, field, value)
     db_session.commit()
     return item
 

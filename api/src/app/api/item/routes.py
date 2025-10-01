@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
 
 from api.item import crud
-from api.item.models import ItemDB, ItemSchema
+from api.item.models import ItemDB, ItemSchema, ItemUpdateSchema
 from db import SessionLocal
 
 
@@ -44,7 +44,7 @@ def read_all_items(db: Session = Depends(get_db)):
 
 @router.put("/{id}/", response_model=ItemDB)
 def update_note(
-    *, db: Session = Depends(get_db), id: int = Path(..., gt=0), payload: ItemSchema
+    *, db: Session = Depends(get_db), id: int = Path(..., gt=0), payload: ItemUpdateSchema
 ):
     item = crud.get(db_session=db, id=id)
     if not item:
@@ -52,12 +52,7 @@ def update_note(
     item = crud.put(
         db_session=db,
         item=item,
-        name=payload.name,
-        description=payload.description,
-        category=payload.category,
-        price=payload.price,
-        amount=payload.amount,
-        purchased=payload.purchased,
+        payload=payload,
     )
     return item
 

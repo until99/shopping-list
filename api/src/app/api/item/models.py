@@ -73,6 +73,15 @@ class ItemSchema(BaseModel):
     purchased: bool = Field(...)
 
 
+class ItemUpdateSchema(BaseModel):
+    name: str | None = Field(None, min_length=3, max_length=50)
+    description: str | None = Field(None, min_length=3, max_length=500)
+    category: str | None = Field(None, min_length=3, max_length=50)
+    price: float | None = Field(None, gt=0)
+    amount: int | None = Field(None, gt=0)
+    purchased: bool | None = Field(None)
+
+
 class ItemDB(ItemSchema):
     id: int
 
