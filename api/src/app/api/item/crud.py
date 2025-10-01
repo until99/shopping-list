@@ -30,6 +30,11 @@ def get_all(db_session: Session):
     return db_session.execute(stmt).scalars().all()
 
 
+def search(db_session: Session, query: str):
+    stmt = select(Item).where(getattr(Item, "name").ilike(f"%{query}%"))
+    return db_session.execute(stmt).scalars().all()
+
+
 def get_all_where(db_session: Session, **kwargs):
     stmt = select(Item).filter_by(**kwargs)
     return db_session.execute(stmt).scalars().all()

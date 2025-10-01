@@ -36,7 +36,10 @@ def search_items(
     db: Session = Depends(get_db),
     q: str | None = None,
 ):
-    return crud.get_all_where(db_session=db, name=q)
+    if q is None:
+        return []
+    
+    return crud.search(db_session=db, query=q)
 
 
 @router.get("/{id}/", response_model=ItemDB)
