@@ -1,0 +1,75 @@
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Path
+from sqlalchemy.orm import Session
+
+from api.item import crud
+from api.item.models import ItemDB, ItemSchema
+from db import SessionLocal
+
+
+router = APIRouter()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@router.post("/", response_model=ItemDB, status_code=201)
+def create_item(*, db: Session = Depends(get_db), payload: ItemSchema):
+    note = crud.post(db_session=db, payload=payload)
+    return note
+
+
+@router.get("/{id}/", response_model=ItemDB)
+def read_item(
+    *,
+    db: Session = Depends(get_db),
+    id: int = Path(..., gt=0),
+):
+    item = crud.get(db_session=db, id=id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return item
+
+
+@router.get("/", response_model=List[ItemDB])
+def read_all_items(db: Session = Depends(get_db)):
+    return crud.get_all(db_session=db)
+
+
+@router.put("/{id}/", response_model=ItemDB)
+def update_note(
+    *, db: Session = Depends(get_db), id: int = Path(..., gt=0), payload: ItemSchema
+):
+    item = crud.get(db_session=db, id=id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item = crud.put(
+        db_session=db,
+        item=item,
+        name=payload.name,
+        description=payload.description,
+        category=payload.category,
+        price=payload.price,
+        amount=payload.amount,
+        purchased=payload.purchased,
+    )
+    return item
+
+
+@router.delete("/{id}/", response_model=ItemDB)
+def delete_item(
+    *,
+    db: Session = Depends(get_db),
+    id: int = Path(..., gt=0),
+):
+    item = crud.get(db_session=db, id=id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item = crud.delete(db_session=db, id=id)
+    return item
