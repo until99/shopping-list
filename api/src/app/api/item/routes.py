@@ -21,8 +21,22 @@ def get_db():
 
 @router.post("/", response_model=ItemDB, status_code=201)
 def create_item(*, db: Session = Depends(get_db), payload: ItemSchema):
-    note = crud.post(db_session=db, payload=payload)
-    return note
+    item = crud.item(db_session=db, payload=payload)
+    return item
+
+
+@router.get("/", response_model=List[ItemDB])
+def read_all_items(db: Session = Depends(get_db)):
+    return crud.get_all(db_session=db)
+
+
+@router.get("/search/", response_model=List[ItemDB])
+def search_items(
+    *,
+    db: Session = Depends(get_db),
+    q: str | None = None,
+):
+    return crud.get_all_where(db_session=db, name=q)
 
 
 @router.get("/{id}/", response_model=ItemDB)
@@ -35,11 +49,6 @@ def read_item(
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
-
-
-@router.get("/", response_model=List[ItemDB])
-def read_all_items(db: Session = Depends(get_db)):
-    return crud.get_all(db_session=db)
 
 
 @router.put("/{id}/", response_model=ItemDB)

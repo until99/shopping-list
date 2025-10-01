@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
 
 from api.item.models import Item, ItemSchema, ItemUpdateSchema
+from sqlalchemy import select
 
 
-def post(db_session: Session, payload: ItemSchema):
+def item(db_session: Session, payload: ItemSchema):
     item = Item(
         name=payload.name,
         description=payload.description,
@@ -15,31 +16,40 @@ def post(db_session: Session, payload: ItemSchema):
     db_session.add(item)
     db_session.commit()
     db_session.refresh(item)
+
     return item
 
 
 def get(db_session: Session, id: int):
-    return db_session.query(Item).filter(Item.id == id).first()
+    stmt = select(Item).where(Item.id == id)
+    return db_session.execute(stmt).scalar_one()
 
 
 def get_all(db_session: Session):
-    return db_session.query(Item).all()
+    stmt = select(Item)
+    return db_session.execute(stmt).scalars().all()
 
 
 def get_all_where(db_session: Session, **kwargs):
-    return db_session.query(Item).filter_by(**kwargs).all()
+    stmt = select(Item).filter_by(**kwargs)
+    return db_session.execute(stmt).scalars().all()
 
 
 def put(db_session: Session, item: Item, payload: ItemUpdateSchema):
     update_data = payload.model_dump(exclude_unset=True)
+
     for field, value in update_data.items():
         setattr(item, field, value)
+
     db_session.commit()
     return item
 
 
 def delete(db_session: Session, id: int):
-    item = db_session.query(Item).filter(Item.id == id).first()
+    stmt = select(Item).where(Item.id == id)
+    item = db_session.execute(stmt).scalar_one_or_none()
+
     db_session.delete(item)
     db_session.commit()
+
     return item
